@@ -35,7 +35,7 @@ export const talkToNpc = createServerFn({ method: "POST" })
     return { ...d, message, history: (d.history ?? []).slice(-16) };
   })
   .handler(async ({ data }): Promise<{ ok: true; result: NpcResult } | { ok: false; error: string }> => {
-    const key = process.env.LOVABLE_API_KEY;
+    const key = process.env["LOVABLE_API_KEY"];
     if (!key) return { ok: false, error: "AI is not configured." };
     const input = [
       ...data.history.map((t) => ({
