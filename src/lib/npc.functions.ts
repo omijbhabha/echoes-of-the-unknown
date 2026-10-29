@@ -57,7 +57,7 @@ export const talkToNpc = createServerFn({ method: "POST" })
           "X-Title": "The Moonlit Gate",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          models: ["nvidia/nemotron-3.5-super-vl:free", "xingchen-agi/xing4.0-29b-a4b:free", "dots-studio/dots-3-note-preview:free"],
           messages,
           response_format: {
             type: "json_schema",
@@ -78,7 +78,9 @@ export const talkToNpc = createServerFn({ method: "POST" })
       }
       const json = await res.json();
       const text: string = json?.choices?.[0]?.message?.content ?? "";
-      const parsed = JSON.parse(text.replace(/^```(json)?|```$/g, "").trim()) as NpcResult;
+      const m = text.match(/\{[\s\S]*\}/);
+      if (!m) return { ok: false, error: "Vesper mumbled something unclear. Try again." };
+      const parsed = JSON.parse(m[0]) as NpcResult;
       if (!parsed.reply) return { ok: false, error: "Vesper mumbled something unclear. Try again." };
       parsed.trustDelta = Math.max(-30, Math.min(30, Math.round(parsed.trustDelta || 0)));
       return { ok: true, result: parsed };
