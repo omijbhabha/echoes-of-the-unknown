@@ -6,7 +6,7 @@ Talk to it freely (or use quick-choice buttons). Earn **100 trust within 10 turn
 Drop to 0 trust (lies, threats) and you are banished; run out of turns and the gate stays shut.
 
 ## Where Generative AI is used
-- Every Vesper line after the opener is generated live by an LLM (`openai/gpt-6-astra` via Lovable AI Gateway).
+- Every Vesper line after the opener is generated live by an LLM (`openai/gpt-4o-mini` via OpenRouter).
 - The model also *judges* each player message and returns structured JSON: `reply`, `trustDelta` (-30..+30),
   `mood`, and `outcome` (continue / opened / banished). The game state (trust bar, mood, ending) is driven by this.
 - Riddles, reactions to bribes, flattery, etc. are improvised — no scripted responses.
@@ -18,7 +18,7 @@ Drop to 0 trust (lies, threats) and you are banished; run out of turns and the g
   message is restored so they can retry. Trust delta is clamped server-side.
 
 ## Tools
-TanStack Start (React 19, TypeScript), Tailwind CSS, Lovable AI Gateway.
+TanStack Start (React 19, TypeScript), Tailwind CSS, OpenRouter API.
 
 ## Run
-`bun install && bun run dev`, open http://localhost:8080. Requires `LOVABLE_API_KEY` in the server environment.
+`bun install && bun run dev`, open http://localhost:8080. Requires `OPENROUTER_API_KEY` in the server environment.
