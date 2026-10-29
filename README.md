@@ -1,29 +1,24 @@
-# Welcome to your Lovable project
+# The Moonlit Gate — an AI NPC game
 
-This project was built with [Lovable](https://lovable.dev).
+## Concept
+You are a traveller trying to enter a forbidden library. **Vesper**, an ancient gargoyle, guards the gate.
+Talk to it freely (or use quick-choice buttons). Earn **100 trust within 10 turns** to open the gate.
+Drop to 0 trust (lies, threats) and you are banished; run out of turns and the gate stays shut.
 
-## Build with Lovable
+## Where Generative AI is used
+- Every Vesper line after the opener is generated live by an LLM (`openai/gpt-6-astra` via Lovable AI Gateway).
+- The model also *judges* each player message and returns structured JSON: `reply`, `trustDelta` (-30..+30),
+  `mood`, and `outcome` (continue / opened / banished). The game state (trust bar, mood, ending) is driven by this.
+- Riddles, reactions to bribes, flattery, etc. are improvised — no scripted responses.
+- Code: `src/lib/npc.functions.ts` (server function, prompt + JSON schema), `src/routes/index.tsx` (game UI/state).
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+## Error handling
+- Empty or >400-char input is rejected with a message (client and server).
+- AI/API errors (rate limit 429, credits 402, network, malformed output) show a friendly alert; the player's
+  message is restored so they can retry. Trust delta is clamped server-side.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## Tools
+TanStack Start (React 19, TypeScript), Tailwind CSS, Lovable AI Gateway.
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+## Run
+`bun install && bun run dev`, open http://localhost:8080. Requires `LOVABLE_API_KEY` in the server environment.
