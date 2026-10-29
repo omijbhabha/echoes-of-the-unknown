@@ -35,9 +35,10 @@ export const talkToNpc = createServerFn({ method: "POST" })
     return { ...d, message, history: (d.history ?? []).slice(-16) };
   })
   .handler(async ({ data }): Promise<{ ok: true; result: NpcResult } | { ok: false; error: string }> => {
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) return { ok: false, error: "AI is not configured." };
-    const input = [
+    const key = process.env["OPENROUTER_API_KEY"];
+    if (!key) return { ok: false, error: "AI is not configured (missing OpenRouter key)." };
+    const messages = [
+      { role: "system", content: SYSTEM },
       ...data.history.map((t) => ({
         role: t.role === "player" ? "user" : "assistant",
         content: t.text,
@@ -48,57 +49,37 @@ export const talkToNpc = createServerFn({ method: "POST" })
       },
     ];
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
-          "X-Lovable-AIG-SDK": "fetch",
+          "X-Title": "The Moonlit Gate",
         },
         body: JSON.stringify({
-          model: "openai/gpt-6-astra",
-          instructions: SYSTEM,
-          input,
-          stream: true,
-          store: false,
-          reasoning: { effort: "low" },
-          text: { format: { type: "json_schema", name: "npc_turn", strict: true, schema } },
+          model: "openai/gpt-4o-mini",
+          messages,
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "npc_turn", strict: true, schema },
+          },
         }),
       });
-      if (!res.ok || !res.body) {
+      if (!res.ok) {
         const msg =
           res.status === 429
             ? "Vesper is overwhelmed (rate limited). Wait a moment and try again."
-            : res.status === 402
-              ? "AI credits have run out for this workspace."
-              : `The gargoyle's magic flickered (error ${res.status}). Try again.`;
+            : res.status === 401
+              ? "The OpenRouter key is invalid."
+              : res.status === 402
+                ? "Your OpenRouter account is out of credits."
+                : `The gargoyle's magic flickered (error ${res.status}). Try again.`;
         return { ok: false, error: msg };
       }
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      let text = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (!payload || payload === "[DONE]") continue;
-          try {
-            const ev = JSON.parse(payload);
-            if (ev.type === "response.output_text.delta") text += ev.delta;
-            if (ev.type === "error" || ev.type === "response.failed")
-              return { ok: false, error: "The AI failed to respond. Try again." };
-          } catch {
-            /* partial */
-          }
-        }
-      }
-      const parsed = JSON.parse(text) as NpcResult;
+      const json = await res.json();
+      const text: string = json?.choices?.[0]?.message?.content ?? "";
+      const parsed = JSON.parse(text.replace(/^```(json)?|```$/g, "").trim()) as NpcResult;
+      if (!parsed.reply) return { ok: false, error: "Vesper mumbled something unclear. Try again." };
       parsed.trustDelta = Math.max(-30, Math.min(30, Math.round(parsed.trustDelta || 0)));
       return { ok: true, result: parsed };
     } catch (e) {
