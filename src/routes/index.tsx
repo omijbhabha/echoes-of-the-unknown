@@ -33,7 +33,9 @@ function Game() {
   const [outcome, setOutcome] = useState<"continue" | "opened" | "banished" | "timeout">("continue");
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [history, loading]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [history, loading]);
 
   async function send(text: string) {
     const msg = text.trim();
